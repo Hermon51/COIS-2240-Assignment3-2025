@@ -38,14 +38,27 @@ return instance;
 
 
 
-    public void addVehicle(Vehicle vehicle) {
+    public boolean  addVehicle(Vehicle vehicle) {
+    	for (Vehicle v : vehicles) {
+            if (v.getLicensePlate().equals(vehicle.getLicensePlate())) {
+                return false; 
+        }
+    	}	
         vehicles.add(vehicle);
         saveVehicle(vehicle);
+        return true;
     }
 
-    public void addCustomer(Customer customer) {
-        customers.add(customer);
+    public boolean addCustomer(Customer customer) {
+      
+    	 for (Customer c : customers) {
+    	        if (c.getCustomerId() == customer.getCustomerId()) {
+    	            return false; 
+    	        }
+    	 }
+    	customers.add(customer);
         saveCustomer(customer);
+        return true;
     }
 
     public void rentVehicle(Vehicle vehicle, Customer customer, LocalDate date, double amount) {
