@@ -2,6 +2,15 @@ import java.util.List;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
+
+import java.io.FileWriter;
+import java.io.IOException;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+
+
+
 public class RentalSystem {
 
 
@@ -16,6 +25,7 @@ public class RentalSystem {
     	vehicles = new ArrayList<>();
         customers = new ArrayList<>();
         rentalHistory = new RentalHistory();
+        loadData();
     }
     
     public static RentalSystem getInstance() {
@@ -30,10 +40,12 @@ return instance;
 
     public void addVehicle(Vehicle vehicle) {
         vehicles.add(vehicle);
+        saveVehicle(vehicle);
     }
 
     public void addCustomer(Customer customer) {
         customers.add(customer);
+        saveCustomer(customer);
     }
 
     public void rentVehicle(Vehicle vehicle, Customer customer, LocalDate date, double amount) {
@@ -41,6 +53,7 @@ return instance;
             vehicle.setStatus(Vehicle.VehicleStatus.Rented);
             rentalHistory.addRecord(new RentalRecord(vehicle, customer, date, amount, "RENT"));
             System.out.println("Vehicle rented to " + customer.getCustomerName());
+            saveRecord(new RentalRecord(vehicle, customer, date, amount, "Rent"));
         }
         else {
             System.out.println("Vehicle is not available for renting.");
@@ -52,6 +65,8 @@ return instance;
             vehicle.setStatus(Vehicle.VehicleStatus.Available);
             rentalHistory.addRecord(new RentalRecord(vehicle, customer, date, extraFees, "RETURN"));
             System.out.println("Vehicle returned by " + customer.getCustomerName());
+            saveRecord(new RentalRecord(vehicle, customer, date, extraFees , "Return"));
+        
         }
         else {
             System.out.println("Vehicle is not rented.");
@@ -127,6 +142,45 @@ return instance;
         }
     }
     
+    
+    
+    
+   private void saveVehicle(Vehicle vehicle) {
+	   
+	   try (FileWriter writer= new FileWriter("vehicles.txt", true)) {
+		   writer.write(vehicle.getClass().getSimpleName() + "," + vehicle.getLicensePlate() + "," + vehicle.getMake() + "," + vehicle.getModel() + "," + vehicle.getYear() );
+		   
+	   } catch (IOException e) {
+		   System.out.println("Error" + e.getMessage());
+	   }
+   }
+    
+   private void saveCustomer(Customer customer) {
+	try  (FileWriter writer = new FileWriter("customers.txt", true)) {
+		   writer.write(customer.getCustomerId() + "," + customer.getCustomerName()) ;
+		   
+	   } catch (IOException e) {
+			   System.out.println("Error" + e.getMessage());
+	   }
+   }
+   
+   
+private void saveRecord(RentalRecord record) {
+	   
+	   try (FileWriter writer= new FileWriter("rentalrecords.txt", true)) {
+		   writer.write( record.getVehicle().getLicensePlate() + "," + record.getCustomer().getCustomerId() + "," + record.getRecordDate() + "," + record.getTotalAmount() + "," + record.getRecordType() );
+		   
+	   } catch (IOException e) {
+		   System.out.println("Error" + e.getMessage());
+	   }
+   }
+   
+   
+   
+   
+   
+   
+   
     public Vehicle findVehicleByPlate(String plate) {
         for (Vehicle v : vehicles) {
             if (v.getLicensePlate().equalsIgnoreCase(plate)) {
@@ -142,4 +196,80 @@ return instance;
                 return c;
         return null;
     }
+
+
+
+    private void loadData() {
+    	loadVehicles();
+    	loadCustomers();
+    	loadRecords();
+    }
+    	
+        
+    	
+
+    	private void loadCustomers() {
+    	    try (BufferedReader reader = new BufferedReader(new FileReader("customers.txt"))) {
+    	        String line;
+    	        while ((line = reader.readLine()) != null) {
+    	            String[] parts = line.split(",");
+    	            int id = Integer.parseInt(parts[0]);
+    	            String name = parts[1];
+    	            customers.add(new Customer(id, name));
+    	        }
+    	    } catch (Exception e) {
+    	        System.out.println("No customers loaded.");
+    	    }
+    	}
+    	private void loadVehicles() {
+    	    try (BufferedReader reader = new BufferedReader(new FileReader("vehicles.txt"))) {
+    	        String line;
+    	        while ((line = reader.readLine()) != null) {
+    	            String[] parts = line.split(",");
+
+    	            String plate  = parts[0];
+    	            String make   = parts[1];
+    	            String model  = parts[2];
+    	            int year      = Integer.parseInt(parts[3]);
+
+    	            // Default to Car because Vehicle is abstract
+    	            Vehicle v = new Car(make, model, year, 4); // Default 4 seats
+    	            v.setLicensePlate(plate);
+
+    	            vehicles.add(v);
+    	        }
+
+    	    } catch (Exception e) {
+    	        System.out.println("No vehicles loaded.");
+    	    }
+    	}
+
+
+    	private void loadRecords() {
+    	    try (BufferedReader reader = new BufferedReader(new FileReader("rental_records.txt"))) {
+    	        String line;
+    	        while ((line = reader.readLine()) != null) {
+    	            String[] parts = line.split(",");
+    	            String plate = parts[0];
+    	            int customerId = Integer.parseInt(parts[1]);
+    	            LocalDate date = LocalDate.parse(parts[2]);
+    	            double amount = Double.parseDouble(parts[3]);
+    	            String type = parts[4];
+
+    	            Vehicle v = findVehicleByPlate(plate);
+    	            Customer c = findCustomerById(customerId);
+
+    	            if (v != null && c != null) {
+    	                rentalHistory.addRecord(new RentalRecord(v, c, date, amount, type));
+    	            }
+    	        }
+    	    } catch (Exception e) {
+    	        System.out.println("No records loaded.");
+    	    }
+    	}
+
 }
+
+
+
+
